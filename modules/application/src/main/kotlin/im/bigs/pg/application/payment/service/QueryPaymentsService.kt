@@ -3,9 +3,15 @@ package im.bigs.pg.application.payment.service
 import im.bigs.pg.application.payment.port.`in`.QueryFilter
 import im.bigs.pg.application.payment.port.`in`.QueryPaymentsUseCase
 import im.bigs.pg.application.payment.port.`in`.QueryResult
+import im.bigs.pg.application.payment.port.out.PaymentOutPort
+import im.bigs.pg.application.payment.port.out.PaymentQuery
+import im.bigs.pg.application.payment.port.out.PaymentSummaryFilter
+import im.bigs.pg.domain.payment.PaymentStatus
 import im.bigs.pg.domain.payment.PaymentSummary
 import org.springframework.stereotype.Service
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.Base64
 
 /**
@@ -14,7 +20,9 @@ import java.util.Base64
  * - 통계는 조회 조건과 동일한 집합을 대상으로 계산됩니다.
  */
 @Service
-class QueryPaymentsService : QueryPaymentsUseCase {
+class QueryPaymentsService(
+    private val paymentRepository: PaymentOutPort,
+) : QueryPaymentsUseCase {
     /**
      * 필터를 기반으로 결제 내역을 조회합니다.
      *
@@ -25,31 +33,59 @@ class QueryPaymentsService : QueryPaymentsUseCase {
      * @return 조회 결과(목록/통계/커서)
      */
     override fun query(filter: QueryFilter): QueryResult {
+
+        // 1. 목록 조회 (커서 페이징)
+        val res = paymentRepository.findBy(
+            PaymentQuery().copy(
+                partnerId = filter.partnerId,
+                status = filter.status?.let { PaymentStatus.valueOf(it) },
+                from = filter.from,
+                to = filter.to,
+                limit = filter.limit,
+                cursorCreatedAt = decodeCursor(filter.cursor).first,
+                cursorId = decodeCursor(filter.cursor).second,
+            )
+        )
+
+        // 2. 요약 조회
+        val summary = paymentRepository.summary(
+            PaymentSummaryFilter(
+                partnerId = filter.partnerId,
+                status = filter.status?.let { PaymentStatus.valueOf(it) },
+                from = filter.from,
+                to = filter.to
+            )
+        )
+
         return QueryResult(
-            items = emptyList(),
-            summary = PaymentSummary(count = 0, totalAmount = java.math.BigDecimal.ZERO, totalNetAmount = java.math.BigDecimal.ZERO),
-            nextCursor = null,
-            hasNext = false,
+            items = res.items,
+            summary = PaymentSummary(
+                count = summary.count,
+                totalAmount = summary.totalAmount,
+                totalNetAmount = summary.totalNetAmount
+            ),
+            nextCursor = encodeCursor(res.nextCursorCreatedAt, res.nextCursorId),
+            hasNext = res.hasNext,
         )
     }
 
     /** 다음 페이지 이동을 위한 커서 인코딩. */
-    private fun encodeCursor(createdAt: Instant?, id: Long?): String? {
+    private fun encodeCursor(createdAt: LocalDateTime?, id: Long?): String? {
         if (createdAt == null || id == null) return null
-        val raw = "${createdAt.toEpochMilli()}:$id"
+        val raw = "${createdAt.toInstant(ZoneOffset.UTC).toEpochMilli()}:$id"
         return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.toByteArray())
     }
 
     /** 요청으로 전달된 커서 복원. 유효하지 않으면 null 커서로 간주합니다. */
-    private fun decodeCursor(cursor: String?): Pair<Instant?, Long?> {
+    private fun decodeCursor(cursor: String?): Pair<LocalDateTime?, Long?> {
         if (cursor.isNullOrBlank()) return null to null
         return try {
             val raw = String(Base64.getUrlDecoder().decode(cursor))
             val parts = raw.split(":")
             val ts = parts[0].toLong()
             val id = parts[1].toLong()
-            Instant.ofEpochMilli(ts) to id
-        } catch (e: Exception) {
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(ts), ZoneOffset.UTC) to id
+        } catch (_: Exception) {
             null to null
         }
     }
