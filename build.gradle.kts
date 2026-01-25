@@ -31,6 +31,9 @@ allprojects {
     tasks.withType<JavaCompile>().configureEach { options.release.set(21) }
 
     dependencies {
+        // mysql
+        runtimeOnly("com.mysql:mysql-connector-j:8.3.0")
+
         // kotlin
         implementation("org.jetbrains.kotlin:kotlin-reflect")
 
