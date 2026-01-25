@@ -44,19 +44,27 @@ class PaymentService(
                 cardBin = command.cardBin,
                 cardLast4 = command.cardLast4,
                 productName = command.productName,
+                birthDate = command.birthDate,
+                cardNumber = command.cardNumber,
+                expiry = command.expiry,
+                password = command.password
             ),
         )
-        val hardcodedRate = java.math.BigDecimal("0.0300")
-        val hardcodedFixed = java.math.BigDecimal("100")
-        val (fee, net) = FeeCalculator.calculateFee(command.amount, hardcodedRate, hardcodedFixed)
+
+        val feePolicy = feePolicyRepository.findEffectivePolicy(partner.id)
+            ?: throw IllegalArgumentException("Fee policy not found for partner ${partner.id}")
+
+        val rate = feePolicy.percentage
+        val fixed = feePolicy.fixedFee
+        val (fee, net) = FeeCalculator.calculateFee(command.amount, rate, fixed)
         val payment = Payment(
             partnerId = partner.id,
             amount = command.amount,
-            appliedFeeRate = hardcodedRate,
+            appliedFeeRate = rate,
             feeAmount = fee,
             netAmount = net,
             cardBin = command.cardBin,
-            cardLast4 = command.cardLast4,
+            cardLast4 = command.cardNumber?.split("-")?.lastOrNull() ?: command.cardLast4,
             approvalCode = approve.approvalCode,
             approvedAt = approve.approvedAt,
             status = PaymentStatus.APPROVED,
