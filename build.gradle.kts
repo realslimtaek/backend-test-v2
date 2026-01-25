@@ -45,10 +45,8 @@ allprojects {
         testImplementation("io.mockk:mockk:1.13.5")
         testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
         testImplementation("com.appmattus.fixture:fixture:1.2.0")
-
-        // webclient
-        implementation("org.springframework.boot:spring-boot-starter-webflux:3.4.5")
     }
+
     // Ktlint 설정
     ktlint {
         version.set("0.45.2")
