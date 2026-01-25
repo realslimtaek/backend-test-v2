@@ -36,7 +36,7 @@ class TestPgClient(
             throw IllegalArgumentException("birthDate, cardNumber, expiry, password must not be null")
         }
 
-        val str = mapper.writeValueAsString(
+        val enc = mapper.writeValueAsString(
             TestPgRequest(
                 birthDate = request.birthDate,
                 cardNumber = request.cardNumber,
@@ -44,8 +44,7 @@ class TestPgClient(
                 password = request.password,
                 amount = request.amount
             )
-        )
-        val enc = encryptor.encrypt(str)
+        ).run(encryptor::encrypt)
 
         return try {
             webClient.post()
