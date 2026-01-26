@@ -8,6 +8,9 @@ import im.bigs.pg.application.payment.port.`in`.PaymentCommand
 import im.bigs.pg.application.payment.port.`in`.PaymentUseCase
 import im.bigs.pg.application.payment.port.`in`.QueryFilter
 import im.bigs.pg.application.payment.port.`in`.QueryPaymentsUseCase
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -27,22 +30,14 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/api/v1/payments")
 @Validated
+@Tag(name = "결제 API", description = "결제 생성/조회 API")
 class PaymentController(
     private val paymentUseCase: PaymentUseCase,
     private val queryPaymentsUseCase: QueryPaymentsUseCase,
 ) {
 
-    /** 결제 생성 요청 페이로드(간소화된 필드). */
-
-    /** API 응답을 위한 변환용 DTO. 도메인 모델을 그대로 노출하지 않습니다. */
-
-    /**
-     * 결제 생성.
-     *
-     * @param req 결제 요청 본문
-     * @return 생성된 결제 요약 응답
-     */
     @PostMapping
+    @Operation(summary = "결제 생성", description = "결제 생성 요청 API")
     fun create(@RequestBody req: CreatePaymentRequest): ResponseEntity<PaymentResponse> {
         val saved = paymentUseCase.pay(
             PaymentCommand(
@@ -74,6 +69,13 @@ class PaymentController(
      * @return 목록/통계/커서 정보
      */
     @GetMapping
+    @Operation(summary = "결제 조회", description = "결제 내역 및 통계를 조회합니다.")
+    @Parameter(name = "partnerId", description = "제휴사 고유 ID", example = "1", required = false)
+    @Parameter(name = "status", description = "결제 상태", example = "APPROVED", required = false)
+    @Parameter(name = "from", description = "조회 기준 시작 시각", example = "2025-01-01 00:00:00", required = false)
+    @Parameter(name = "to", description = "조회 기준 종료 시각", example = "2025-01-01 00:00:00", required = false)
+    @Parameter(name = "cursor", description = "다음 페이지 커서", example = "MTc2OTQ3MzA2MDAwMDo0", required = false)
+    @Parameter(name = "limit", description = "페이지 크기", example = "20", required = false)
     fun query(
         @RequestParam(required = false) partnerId: Long?,
         @RequestParam(required = false) status: String?,
