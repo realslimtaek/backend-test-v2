@@ -11,6 +11,7 @@ import im.bigs.pg.application.payment.port.`in`.QueryPaymentsUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -38,7 +39,7 @@ class PaymentController(
 
     @PostMapping
     @Operation(summary = "결제 생성", description = "결제 생성 요청 API")
-    fun create(@RequestBody req: CreatePaymentRequest): ResponseEntity<PaymentResponse> {
+    fun create(@Valid @RequestBody req: CreatePaymentRequest): ResponseEntity<PaymentResponse> {
         val saved = paymentUseCase.pay(
             PaymentCommand(
                 partnerId = req.partnerId,

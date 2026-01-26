@@ -1,13 +1,14 @@
 package im.bigs.pg.api.payment.dto
 
-import im.bigs.pg.api.payment.validation.ValidPaymentRequest
+import im.bigs.pg.api.payment.dto.validation.ValidPaymentRequest
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import java.math.BigDecimal
 
+@ValidPaymentRequest
 data class CreatePaymentRequest(
-    @field:Schema(description = "제휴사 ID", example = "1", required = true)
+    @field:Schema(description = "제휴사 ID | 1 or 2", example = "1", required = true)
     @field:Min(value = 1, message = "partnerId는 1 또는 2여야 합니다.")
     @field:Max(value = 2, message = "partnerId는 1 또는 2여야 합니다.")
     val partnerId: Long,
