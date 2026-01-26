@@ -1,10 +1,10 @@
 package im.bigs.pg.external.pg
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import im.bigs.pg.application.pg.port.out.PgApproveRequest
 import im.bigs.pg.application.pg.port.out.PgApproveResult
 import im.bigs.pg.application.pg.port.out.PgClientOutPort
 import im.bigs.pg.application.pg.port.out.PgFailedResult
+import im.bigs.pg.application.pg.port.out.TestPgReq
 import im.bigs.pg.common.Encrypt
 import im.bigs.pg.external.dto.TestPgRequest
 import org.springframework.beans.factory.annotation.Value
@@ -15,12 +15,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 @Component
 class TestPgClient(
-
     @Value("\${dv.api_key}")
     private val API_KEY: String,
-
-    private val encryptor: Encrypt
-) : PgClientOutPort {
+    private val encryptor: Encrypt,
+) : PgClientOutPort<TestPgReq> {
 
     private val mapper = jacksonObjectMapper()
 
@@ -31,7 +29,7 @@ class TestPgClient(
 
     override fun supports(partnerId: Long): Boolean = partnerId % 2L == 0L
 
-    override fun approve(request: PgApproveRequest): PgApproveResult {
+    override fun approve(request: TestPgReq): PgApproveResult {
         require(request.birthDate != null && request.cardNumber != null && request.expiry != null && request.password != null) {
             throw IllegalArgumentException("birthDate, cardNumber, expiry, password must not be null")
         }

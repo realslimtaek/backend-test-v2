@@ -1,5 +1,6 @@
 package im.bigs.pg.application.payment.port.`in`
 
+import im.bigs.pg.application.pg.port.out.PgApproveReq
 import java.math.BigDecimal
 
 /**
@@ -12,17 +13,17 @@ import java.math.BigDecimal
  * @property productName 상품명(없을 수 있음)
  */
 data class PaymentCommand(
-    val partnerId: Long,
-    val amount: BigDecimal,
+    override val partnerId: Long,
+    override val amount: BigDecimal,
 
     // 아래는 mockpayment용 입니다.
-    val cardBin: String? = null,
-    val cardLast4: String? = null,
-    val productName: String? = null,
+    override val cardBin: String? = null,
+    override val cardLast4: String? = null,
+    override val productName: String? = null,
 
     // 아래는 testPayment용 입니다.
-    val birthDate: String? = null,
-    val cardNumber: String? = null,
-    val expiry: String? = null,
-    val password: String? = null,
-)
+    override val birthDate: String? = null,
+    override val cardNumber: String? = null,
+    override val expiry: String? = null,
+    override val password: String? = null,
+) : PgApproveReq

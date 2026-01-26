@@ -4,6 +4,7 @@ import im.bigs.pg.application.partner.port.out.FeePolicyOutPort
 import im.bigs.pg.application.partner.port.out.PartnerOutPort
 import im.bigs.pg.application.payment.port.`in`.PaymentCommand
 import im.bigs.pg.application.payment.port.out.PaymentOutPort
+import im.bigs.pg.application.pg.port.out.CommonPgApproveRequest
 import im.bigs.pg.application.pg.port.out.PgApproveRequest
 import im.bigs.pg.application.pg.port.out.PgApproveResult
 import im.bigs.pg.application.pg.port.out.PgClientOutPort
@@ -29,14 +30,16 @@ class PaymentServiceTest {
     private val partnerRepo = mockk<PartnerOutPort>()
     private val feeRepo = mockk<FeePolicyOutPort>()
     private val paymentRepo = mockk<PaymentOutPort>()
-    private val pgClient = mockk<PgClientOutPort>()
+    // 제네릭 타입을 CommonPgApproveRequest로 명시하여 모킹
+    private val pgClient = mockk<PgClientOutPort<CommonPgApproveRequest>>()
 
-    private val service = PaymentService(partnerRepo, feeRepo, paymentRepo, listOf(pgClient))
+    // PaymentService는 List<PgClientOutPort<*>>를 받으므로 캐스팅해서 주입
+    @Suppress("UNCHECKED_CAST")
+    private val service = PaymentService(partnerRepo, feeRepo, paymentRepo, listOf(pgClient as PgClientOutPort<*>))
 
     @Test
     @DisplayName("결제 시 수수료 정책을 적용하고 저장해야 한다")
     fun `결제 시 수수료 정책을 적용하고 저장해야 한다`() {
-        val service = PaymentService(partnerRepo, feeRepo, paymentRepo, listOf(pgClient))
         every { partnerRepo.findById(1L) } returns Partner(1L, "TEST", "Test", true)
 
         every { pgClient.supports(1L) } returns true
@@ -138,7 +141,8 @@ class PaymentServiceTest {
         every { partnerRepo.findById(partnerId) } returns Partner(partnerId, "TEST", "Test Partner", true)
         every { pgClient.supports(partnerId) } returns true
 
-        val pgRequestSlot = slot<PgApproveRequest>()
+        // 캡처할 슬롯의 타입을 CommonPgApproveRequest로 변경 (PgApproveRequest는 이를 구현함)
+        val pgRequestSlot = slot<CommonPgApproveRequest>()
         every { pgClient.approve(capture(pgRequestSlot)) } returns PgApproveResult("CODE", LocalDateTime.now(), PaymentStatus.APPROVED)
 
         every { feeRepo.findEffectivePolicy(partnerId, any()) } returns FeePolicy(
@@ -158,7 +162,8 @@ class PaymentServiceTest {
 
         service.pay(cmd)
 
-        val capturedRequest = pgRequestSlot.captured
+        // 캡처된 객체를 PgApproveRequest로 캐스팅하여 검증 (실제 서비스에서 PgApproveRequest를 생성해서 넘기므로)
+        val capturedRequest = pgRequestSlot.captured as PgApproveRequest
         Assertions.assertEquals(partnerId, capturedRequest.partnerId)
         Assertions.assertEquals(amount, capturedRequest.amount)
         Assertions.assertEquals(birthDate, capturedRequest.birthDate)

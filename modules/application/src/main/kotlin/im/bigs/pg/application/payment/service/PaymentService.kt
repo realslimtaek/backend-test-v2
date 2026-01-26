@@ -5,7 +5,9 @@ import im.bigs.pg.application.partner.port.out.PartnerOutPort
 import im.bigs.pg.application.payment.port.`in`.PaymentCommand
 import im.bigs.pg.application.payment.port.`in`.PaymentUseCase
 import im.bigs.pg.application.payment.port.out.PaymentOutPort
+import im.bigs.pg.application.pg.port.out.CommonPgApproveRequest
 import im.bigs.pg.application.pg.port.out.PgApproveRequest
+import im.bigs.pg.application.pg.port.out.PgApproveResult
 import im.bigs.pg.application.pg.port.out.PgClientOutPort
 import im.bigs.pg.domain.calculation.FeeCalculator
 import im.bigs.pg.domain.payment.Payment
@@ -22,7 +24,7 @@ class PaymentService(
     private val partnerRepository: PartnerOutPort,
     private val feePolicyRepository: FeePolicyOutPort,
     private val paymentRepository: PaymentOutPort,
-    private val pgClients: List<PgClientOutPort>,
+    private val pgClients: List<PgClientOutPort<*>>,
 ) : PaymentUseCase {
     /**
      * 결제 승인/수수료 계산/저장을 순차적으로 수행합니다.
@@ -37,7 +39,7 @@ class PaymentService(
         val pgClient = pgClients.firstOrNull { it.supports(partner.id) }
             ?: throw IllegalStateException("No PG client for partner ${partner.id}")
 
-        val approve = pgClient.approve(
+        val approve = pgClient.executeApprove(
             PgApproveRequest(
                 partnerId = partner.id,
                 amount = command.amount,
@@ -48,7 +50,7 @@ class PaymentService(
                 cardNumber = command.cardNumber,
                 expiry = command.expiry,
                 password = command.password
-            ),
+            )
         )
 
         val feePolicy = feePolicyRepository.findEffectivePolicy(partner.id)
@@ -71,5 +73,10 @@ class PaymentService(
         )
 
         return paymentRepository.save(payment)
+    }
+
+    private fun PgClientOutPort<*>.executeApprove(command: CommonPgApproveRequest): PgApproveResult {
+        val client = this as PgClientOutPort<CommonPgApproveRequest>
+        return client.approve(command)
     }
 }
