@@ -55,16 +55,20 @@
 
 ## 5. 개발 환경 & 실행 방법
 - JDK 21, Gradle Wrapper 사용
-- H2 인메모리 DB 기본 실행(필요 시 schema/data/migration 구성 변경 가능)
+- ~~H2 인메모리 DB 기본 실행(필요 시 schema/data/migration 구성 변경 가능)~~
 
 명령어
 ```bash
-./gradlew build                  # 컴파일 + 모든 테스트
-./gradlew test                   # 테스트만
+./gradlew ktlintFormat ktlintCheck            # 코드 스타일 자동정렬 및 검사
+./gradlew build                               # 컴파일 + 모든 테스트
+./gradlew test                                # 테스트만
+docker compose up -d                          # 도커 컨테이너(DB) 실행
 ./gradlew :modules:bootstrap:api-payment-gateway:bootRun   # API 실행
-./gradlew ktlintCheck | ktlintFormat  # 코드 스타일 검사/자동정렬
+
 ```
 기본 포트: 8080
+
+본 프로젝트의 DB는 Docker로 구현되어있습니다. 프로젝트 디렉토리로 이동 후, docker compose up -d 를 사용하여 컨테이너가 뜬 후, 실행해주시길 바랍니다. 
 
 ## 6. API 사양(요약)
 1) 결제 생성
