@@ -17,10 +17,11 @@ import java.time.ZoneOffset
 @Component
 class PaymentPersistenceAdapter(
     private val repo: PaymentJpaRepository,
+    private val mapper: PaymentMapper
 ) : PaymentOutPort {
 
     override fun save(payment: Payment): Payment =
-        repo.save(payment.toEntity()).toDomain()
+        repo.save(mapper.toEntity(payment)).run(mapper::toDomain)
 
     override fun findBy(query: PaymentQuery): PaymentPage {
         val pageSize = query.limit
@@ -37,7 +38,7 @@ class PaymentPersistenceAdapter(
         val items = list.take(pageSize)
         val last = items.lastOrNull()
         return PaymentPage(
-            items = items.map { it.toDomain() },
+            items = items.map (mapper::toDomain),
             hasNext = hasNext,
             nextCursorCreatedAt = last?.createdAt?.let { java.time.LocalDateTime.ofInstant(it, ZoneOffset.UTC) },
             nextCursorId = last?.id,
@@ -58,39 +59,5 @@ class PaymentPersistenceAdapter(
         return PaymentSummaryProjection(cnt, totalAmount, totalNet)
     }
 
-    /** 도메인 → 엔티티 매핑. */
-    private fun Payment.toEntity() =
-        PaymentEntity(
-            id = this.id,
-            partnerId = this.partnerId,
-            amount = this.amount,
-            appliedFeeRate = this.appliedFeeRate,
-            feeAmount = this.feeAmount,
-            netAmount = this.netAmount,
-            cardBin = this.cardBin,
-            cardLast4 = this.cardLast4,
-            approvalCode = this.approvalCode,
-            approvedAt = this.approvedAt.toInstant(ZoneOffset.UTC),
-            status = this.status.name,
-            createdAt = this.createdAt.toInstant(ZoneOffset.UTC),
-            updatedAt = this.updatedAt.toInstant(ZoneOffset.UTC),
-        )
 
-    /** 엔티티 → 도메인 매핑. */
-    private fun PaymentEntity.toDomain() =
-        Payment(
-            id = this.id,
-            partnerId = this.partnerId,
-            amount = this.amount,
-            appliedFeeRate = this.appliedFeeRate,
-            feeAmount = this.feeAmount,
-            netAmount = this.netAmount,
-            cardBin = this.cardBin,
-            cardLast4 = this.cardLast4,
-            approvalCode = this.approvalCode,
-            approvedAt = java.time.LocalDateTime.ofInstant(this.approvedAt, ZoneOffset.UTC),
-            status = PaymentStatus.valueOf(this.status),
-            createdAt = java.time.LocalDateTime.ofInstant(this.createdAt, ZoneOffset.UTC),
-            updatedAt = java.time.LocalDateTime.ofInstant(this.updatedAt, ZoneOffset.UTC),
-        )
 }
