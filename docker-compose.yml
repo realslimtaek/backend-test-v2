@@ -5,7 +5,7 @@ services:
     ports:
       - "3307:3306"
     environment:
-      - MYSQL_DATABASE=big
+      - MYSQL_DATABASE=bix
       - MYSQL_USER=sa
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_PASSWORD=password
