@@ -2,11 +2,15 @@ package im.bigs.pg.api.payment
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import im.bigs.pg.api.payment.dto.CreatePaymentRequest
+import im.bigs.pg.api.payment.dto.MockPayload
+import im.bigs.pg.api.payment.dto.TestPayload
+import im.bigs.pg.infra.persistence.payment.adapter.PaymentMapper
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
@@ -17,6 +21,7 @@ import java.math.BigDecimal
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional // 각 테스트 후 DB 롤백
+@Import(PaymentMapper::class)
 class PaymentControllerTest {
 
     @Autowired
@@ -29,12 +34,14 @@ class PaymentControllerTest {
     @DisplayName("POST /api/v1/payments - 1번 파트너 결제 생성에 성공하고 200 OK를 반환한다")
     fun `유효한 1번 파트너 결제요청`() {
         // given
-        val request = CreatePaymentRequest(
-            partnerId = 1,
-            amount = BigDecimal("10000"),
-            cardBin = "19900101",
+        val payload = MockPayload(
+            cardBin = "123456",
             cardLast4 = "1234",
             productName = "삼성전자"
+        )
+        val request = CreatePaymentRequest(
+            amount = BigDecimal("10000"),
+            payload = payload
         )
 
         // when & then
@@ -51,15 +58,17 @@ class PaymentControllerTest {
 
     @Test
     @DisplayName("POST /api/v1/payments - 2번 파트너 결제 생성에 성공하고 200 OK를 반환한다")
-    fun `유효한 요청`() {
+    fun `유효한 2번 파트너 결제요청`() {
         // given
-        val request = CreatePaymentRequest(
-            partnerId = 2,
-            amount = BigDecimal("10000"),
+        val payload = TestPayload(
             birthDate = "19900101",
             cardNumber = "1111-1111-1111-1111",
             expiry = "1225",
             password = "12"
+        )
+        val request = CreatePaymentRequest(
+            amount = BigDecimal("10000"),
+            payload = payload
         )
 
         // when & then
@@ -77,33 +86,40 @@ class PaymentControllerTest {
     @Test
     @DisplayName("POST /api/v1/payments - 1번 파트너 필수 필드 누락 시 400 Bad Request를 반환한다")
     fun `1번 파트너 유효성 검증 실패`() {
-        val request = CreatePaymentRequest(
-            partnerId = 1,
-            amount = BigDecimal("10000")
-            // cardBin, cardLast4, productName 누락
-        )
+        // language=json
+        val jsonRequest = """
+            {
+              "amount": 10000,
+              "payload": {
+                "type": "mock",
+                "cardBin": "123456",
+                "cardLast4": ""
+              }
+            }
+        """.trimIndent() // productName 누락, cardLast4 빈 값
 
         mockMvc.post("/api/v1/payments") {
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(request)
+            content = jsonRequest
         }.andExpect {
             status { isBadRequest() }
         }
     }
 
     @Test
-    @DisplayName("POST /api/v1/payments - 유효성 검증 실패 시 400 Bad Request를 반환한다")
-    fun `유효성 검증 실패`() {
-
-        val request = CreatePaymentRequest(
-            partnerId = 2,
-            amount = BigDecimal("10000")
-        )
+    @DisplayName("POST /api/v1/payments - 2번 파트너 payload 누락 시 400 Bad Request를 반환한다")
+    fun `2번 파트너 유효성 검증 실패`() {
+        // language=json
+        val jsonRequest = """
+            {
+              "amount": 10000
+            }
+        """.trimIndent() // payload 객체 자체가 누락
 
         // when & then
         mockMvc.post("/api/v1/payments") {
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(request)
+            content = jsonRequest
         }.andExpect {
             status { isBadRequest() }
         }
@@ -113,13 +129,15 @@ class PaymentControllerTest {
     @DisplayName("GET /api/v1/payments - 결제 목록 및 통계 조회 성공")
     fun `결제 목록 조회`() {
         // given: 데이터 2건 생성
+        val payload1 = MockPayload(cardBin = "123456", cardLast4 = "1111", productName = "A")
         val req1 = CreatePaymentRequest(
-            partnerId = 1, amount = BigDecimal("1000"),
-            cardBin = "123456", cardLast4 = "1111", productName = "A"
+            amount = BigDecimal("1000"),
+            payload = payload1
         )
+        val payload2 = MockPayload(cardBin = "123456", cardLast4 = "2222", productName = "B")
         val req2 = CreatePaymentRequest(
-            partnerId = 1, amount = BigDecimal("2000"),
-            cardBin = "123456", cardLast4 = "2222", productName = "B"
+            amount = BigDecimal("2000"),
+            payload = payload2
         )
 
         mockMvc.post("/api/v1/payments") {

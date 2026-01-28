@@ -4,7 +4,6 @@ import im.bigs.pg.api.payment.dto.CreatePaymentRequest
 import im.bigs.pg.api.payment.dto.PaymentResponse
 import im.bigs.pg.api.payment.dto.QueryResponse
 import im.bigs.pg.api.payment.dto.Summary
-import im.bigs.pg.application.payment.port.`in`.PaymentCommand
 import im.bigs.pg.application.payment.port.`in`.PaymentUseCase
 import im.bigs.pg.application.payment.port.`in`.QueryFilter
 import im.bigs.pg.application.payment.port.`in`.QueryPaymentsUseCase
@@ -44,19 +43,8 @@ class PaymentController(
             "예를 들어, 어떤 제휴사는 카드번호/유효기간이 필요하고, 다른 제휴사는 상품명/생년월일이 필요할 수 있습니다. 자세한 내용은 DTO 스키마의 설명을 참고하세요."
     )
     fun create(@Valid @RequestBody req: CreatePaymentRequest): ResponseEntity<PaymentResponse> {
-        val saved = paymentUseCase.pay(
-            PaymentCommand(
-                partnerId = req.partnerId,
-                amount = req.amount,
-                cardBin = req.cardBin,
-                cardLast4 = req.cardLast4,
-                cardNumber = req.cardNumber,
-                productName = req.productName,
-                birthDate = req.birthDate,
-                expiry = req.expiry,
-                password = req.password
-            ),
-        )
+        val command = req.payload.toCommand(req.amount)
+        val saved = paymentUseCase.pay(command)
         return ResponseEntity.ok(PaymentResponse.from(saved))
     }
 
