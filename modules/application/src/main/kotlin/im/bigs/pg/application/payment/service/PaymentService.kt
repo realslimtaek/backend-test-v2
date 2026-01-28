@@ -76,6 +76,7 @@ class PaymentService(
     }
 
     private fun PgClientOutPort<*>.executeApprove(command: CommonPgApproveRequest): PgApproveResult {
+        @Suppress("UNCHECKED_CAST")
         val client = this as PgClientOutPort<CommonPgApproveRequest>
         return client.approve(command)
     }
