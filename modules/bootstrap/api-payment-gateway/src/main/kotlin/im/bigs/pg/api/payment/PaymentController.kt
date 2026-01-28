@@ -38,7 +38,11 @@ class PaymentController(
 ) {
 
     @PostMapping
-    @Operation(summary = "결제 생성", description = "결제 생성 요청 API")
+    @Operation(
+        summary = "결제 생성",
+        description = "결제를 생성하고 PG사 승인을 요청합니다. 제휴사(partnerId)에 따라 필요한 요청 파라미터가 달라집니다. <br>" +
+            "예를 들어, 어떤 제휴사는 카드번호/유효기간이 필요하고, 다른 제휴사는 상품명/생년월일이 필요할 수 있습니다. 자세한 내용은 DTO 스키마의 설명을 참고하세요."
+    )
     fun create(@Valid @RequestBody req: CreatePaymentRequest): ResponseEntity<PaymentResponse> {
         val saved = paymentUseCase.pay(
             PaymentCommand(
