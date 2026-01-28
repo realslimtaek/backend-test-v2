@@ -4,8 +4,8 @@ import im.bigs.pg.application.payment.port.out.PaymentQuery
 import im.bigs.pg.application.payment.port.out.PaymentSummaryFilter
 import im.bigs.pg.domain.payment.Payment
 import im.bigs.pg.domain.payment.PaymentStatus
-import im.bigs.pg.infra.persistence.payment.repository.PaymentJpaRepository
 import im.bigs.pg.infra.persistence.payment.adapter.PaymentPersistenceAdapter // Original adapter import
+import im.bigs.pg.infra.persistence.payment.repository.PaymentJpaRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test

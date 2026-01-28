@@ -6,8 +6,6 @@ import im.bigs.pg.application.payment.port.out.PaymentQuery
 import im.bigs.pg.application.payment.port.out.PaymentSummaryFilter
 import im.bigs.pg.application.payment.port.out.PaymentSummaryProjection
 import im.bigs.pg.domain.payment.Payment
-import im.bigs.pg.domain.payment.PaymentStatus
-import im.bigs.pg.infra.persistence.payment.entity.PaymentEntity
 import im.bigs.pg.infra.persistence.payment.repository.PaymentJpaRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
@@ -38,7 +36,7 @@ class PaymentPersistenceAdapter(
         val items = list.take(pageSize)
         val last = items.lastOrNull()
         return PaymentPage(
-            items = items.map (mapper::toDomain),
+            items = items.map(mapper::toDomain),
             hasNext = hasNext,
             nextCursorCreatedAt = last?.createdAt?.let { java.time.LocalDateTime.ofInstant(it, ZoneOffset.UTC) },
             nextCursorId = last?.id,
@@ -58,6 +56,4 @@ class PaymentPersistenceAdapter(
         val totalNet = arr[2] as java.math.BigDecimal
         return PaymentSummaryProjection(cnt, totalAmount, totalNet)
     }
-
-
 }
