@@ -6,12 +6,19 @@ plugins {
     kotlin("plugin.jpa") version "1.9.25"
     kotlin("kapt") version "1.9.25"
     id("org.jlleitschuh.gradle.ktlint") version "11.6.0"
+    id("jacoco")
+}
+
+// JaCoCo 버전 설정
+jacoco {
+    toolVersion = "0.8.12"
 }
 
 // 프로젝트 전역 설정
 allprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "jacoco")
 
     group = "kr.thedream"
     version = "0.0.1-SNAPSHOT"
@@ -64,6 +71,36 @@ allprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        finalizedBy("jacocoTestReport")
+    }
+
+    tasks.withType<JacocoReport> {
+        dependsOn(tasks.withType<Test>())
+        reports {
+            html.required.set(true)
+            xml.required.set(false)
+            csv.required.set(false)
+            html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+        }
+
+        val excludes = listOf(
+            "**/config/**",
+            "**/common/**",
+            "**/dto/**",
+            "**/*Application*",
+            "**/*Request*",
+            "**/*Response*",
+            "**/*Entity*",
+            "**/Q*.class"
+        )
+
+        classDirectories.setFrom(
+            files(
+                classDirectories.files.map {
+                    fileTree(it) { exclude(excludes) }
+                }
+            )
+        )
     }
 }
 
